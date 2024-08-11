@@ -11,6 +11,12 @@ buildGoModule rec {
     hash = "sha256-Bqy9eFUvUgSdyChzh52qqPVvMi+3ad01koxVgnibbLk=";
   };
 
+  patches = [
+    ./kopiaignore-symlinks.patch
+    ./set-policy-json.patch
+    ./shebang.patch
+  ];
+
   vendorHash = "sha256-/NMp64JeCQjCcEYkE6lYzu/E+irTcwkmDCJhB04ALFY=";
 
   doCheck = false;

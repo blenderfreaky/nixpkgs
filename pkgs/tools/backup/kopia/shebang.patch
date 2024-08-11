@@ -1,0 +1,90 @@
+diff --git a/app/Makefile b/app/Makefile
+index 896dd0a8..569c12eb 100644
+--- a/app/Makefile
++++ b/app/Makefile
+@@ -1,4 +1,4 @@
+-SHELL:=/usr/bin/env bash
++SHELL:=/bin/bash
+ 
+ include ../tools/tools.mk
+ 
+diff --git a/icons/convert.sh b/icons/convert.sh
+index eff790e8..47ef50c3 100755
+--- a/icons/convert.sh
++++ b/icons/convert.sh
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash
+ # create various resolutions from source 1024x1024 PNG
+ 
+ set -e
+diff --git a/tests/perf_benchmark/perf-benchmark.sh b/tests/perf_benchmark/perf-benchmark.sh
+index fe9299f1..85139757 100755
+--- a/tests/perf_benchmark/perf-benchmark.sh
++++ b/tests/perf_benchmark/perf-benchmark.sh
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash
+ VERSION=$1
+ 
+ # stable,testing,unstable
+diff --git a/tools/apt-publish.sh b/tools/apt-publish.sh
+index c4a9dce0..3a7a1766 100755
+--- a/tools/apt-publish.sh
++++ b/tools/apt-publish.sh
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash
+ set -e
+ GS_PREFIX=gs://$PACKAGES_HOST/apt
+ GPG_KEY_ID=7FB99DFD47809F0D5339D7D92273699AFD56A556
+diff --git a/tools/docker-publish.sh b/tools/docker-publish.sh
+index 0e416d90..948523b7 100755
+--- a/tools/docker-publish.sh
++++ b/tools/docker-publish.sh
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash
+ set -e
+ DIST_DIR=${1:-dist}
+ DOCKER_BUILD_DIR=tools/docker
+diff --git a/tools/homebrew-publish.sh b/tools/homebrew-publish.sh
+index 16eed3dd..29c40702 100755
+--- a/tools/homebrew-publish.sh
++++ b/tools/homebrew-publish.sh
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash
+ set -e
+ dist_dir=$1
+ ver=$2
+diff --git a/tools/rpm-publish.sh b/tools/rpm-publish.sh
+index 0a350487..be0df3c9 100755
+--- a/tools/rpm-publish.sh
++++ b/tools/rpm-publish.sh
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash
+ set -e
+ GS_PREFIX=gs://$PACKAGES_HOST/rpm
+ PKGDIR=$1
+diff --git a/tools/scoop-publish.sh b/tools/scoop-publish.sh
+index 06d41ac8..dffb91a0 100755
+--- a/tools/scoop-publish.sh
++++ b/tools/scoop-publish.sh
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash
+ set -e
+ dist_dir=$1
+ ver=$2
+diff --git a/tools/sign.sh b/tools/sign.sh
+index 16f03e7d..03251655 100755
+--- a/tools/sign.sh
++++ b/tools/sign.sh
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash
+ set -e
+ 
+ for f in dist/*rpm; do

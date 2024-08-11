@@ -1,0 +1,174 @@
+diff --git a/fs/entry.go b/fs/entry.go
+index a5f13f10..f0248e4a 100644
+--- a/fs/entry.go
++++ b/fs/entry.go
+@@ -209,7 +209,6 @@ func (s *DirectorySummary) Clone() DirectorySummary {
+ type Symlink interface {
+ 	Entry
+ 	Readlink(ctx context.Context) (string, error)
+-	Resolve(ctx context.Context) (Entry, error)
+ }
+ 
+ // FindByName returns an entry with a given name, or nil if not found. Assumes
+diff --git a/fs/ignorefs/ignorefs.go b/fs/ignorefs/ignorefs.go
+index 39c1e4dd..47773440 100644
+--- a/fs/ignorefs/ignorefs.go
++++ b/fs/ignorefs/ignorefs.go
+@@ -283,13 +283,6 @@ func (d *ignoreDirectory) buildContext(ctx context.Context) (*ignoreContext, err
+ 
+ 	for _, dotfile := range effectiveDotIgnoreFiles {
+ 		if e, err := d.Directory.Child(ctx, dotfile); err == nil {
+-			if f, ok := e.(fs.Symlink); ok {
+-				e, err = f.Resolve(ctx)
+-				if err != nil {
+-					continue
+-				}
+-			}
+-
+ 			if f, ok := e.(fs.File); ok {
+ 				dotIgnoreFiles = append(dotIgnoreFiles, f)
+ 			}
+diff --git a/fs/localfs/local_fs.go b/fs/localfs/local_fs.go
+index 34479259..44097746 100644
+--- a/fs/localfs/local_fs.go
++++ b/fs/localfs/local_fs.go
+@@ -117,15 +117,6 @@ func (fsl *filesystemSymlink) Readlink(ctx context.Context) (string, error) {
+ 	return os.Readlink(fsl.fullPath())
+ }
+ 
+-func (fsl *filesystemSymlink) Resolve(ctx context.Context) (fs.Entry, error) {
+-	path, err := fsl.Readlink(ctx)
+-	if err != nil {
+-		return nil, errors.Wrap(err, "unable to get symlink target")
+-	}
+-
+-	return NewEntry(path)
+-}
+-
+ func (e *filesystemErrorEntry) ErrorInfo() error {
+ 	return e.err
+ }
+diff --git a/fs/localfs/local_fs_test.go b/fs/localfs/local_fs_test.go
+index 86de21c1..45848819 100644
+--- a/fs/localfs/local_fs_test.go
++++ b/fs/localfs/local_fs_test.go
+@@ -294,80 +294,6 @@ func TestDirPrefix(t *testing.T) {
+ 	}
+ }
+ 
+-func TestSymlink(t *testing.T) {
+-	tmp := testutil.TempDirectory(t)
+-	fileName := "file"
+-	dirName := "dir"
+-	fileLinkName := "fileLink"
+-	dirLinkName := "dirLink"
+-
+-	filePath := filepath.Join(tmp, fileName)
+-	dirPath := filepath.Join(tmp, dirName)
+-	fileLinkPath := filepath.Join(tmp, fileLinkName)
+-	dirLinkPath := filepath.Join(tmp, dirLinkName)
+-
+-	assertNoError(t, os.WriteFile(filePath, []byte{1, 2}, 0o777))
+-	assertNoError(t, os.Mkdir(dirPath, 0o777))
+-	assertNoError(t, os.Symlink(filePath, fileLinkPath))
+-	assertNoError(t, os.Symlink(dirPath, dirLinkPath))
+-
+-	dir, err := Directory(tmp)
+-	require.NoError(t, err)
+-	ctx := testlogging.Context(t)
+-
+-	file, err := dir.Child(ctx, fileLinkName)
+-	if err != nil {
+-		t.Errorf("Child error: %v", err)
+-	}
+-
+-	f, ok := file.(fs.Symlink)
+-	if !ok {
+-		t.Errorf("symlink is not detected as a symlink")
+-	}
+-
+-	path, err := f.Readlink(ctx)
+-	if err != nil {
+-		t.Errorf("Unable to read link: %v", err)
+-	}
+-
+-	require.Equal(t, path, filePath)
+-
+-	obj, err := f.Resolve(ctx)
+-	if err != nil {
+-		t.Errorf("Resolve error: %v", err)
+-	}
+-
+-	if _, ok = obj.(fs.File); !ok {
+-		t.Error("Symlink is not pointing to a file")
+-	}
+-
+-	file, err = dir.Child(ctx, dirLinkName)
+-	if err != nil {
+-		t.Errorf("Child error: %v", err)
+-	}
+-
+-	f, ok = file.(fs.Symlink)
+-	if !ok {
+-		t.Errorf("symlink is not detected as a symlink")
+-	}
+-
+-	path, err = f.Readlink(ctx)
+-	if err != nil {
+-		t.Errorf("Unable to read link: %v", err)
+-	}
+-
+-	require.Equal(t, path, dirPath)
+-
+-	obj, err = f.Resolve(ctx)
+-	if err != nil {
+-		t.Errorf("Resolve error: %v", err)
+-	}
+-
+-	if _, ok = obj.(fs.Directory); !ok {
+-		t.Error("Symlink is not pointing to a directory")
+-	}
+-}
+-
+ func assertNoError(t *testing.T, err error) {
+ 	t.Helper()
+ 
+diff --git a/internal/mockfs/mockfs.go b/internal/mockfs/mockfs.go
+index 5aa69be2..0ef68919 100644
+--- a/internal/mockfs/mockfs.go
++++ b/internal/mockfs/mockfs.go
+@@ -4,7 +4,6 @@
+ import (
+ 	"bytes"
+ 	"context"
+-	"errors"
+ 	"fmt"
+ 	"io"
+ 	"os"
+@@ -365,11 +364,6 @@ func (imsl *Symlink) Readlink(ctx context.Context) (string, error) {
+ 	return imsl.target, nil
+ }
+ 
+-// Resolve covers for Symlink interface's Resolve. Not implemented currently.
+-func (imsl *Symlink) Resolve(ctx context.Context) (fs.Entry, error) {
+-	return nil, errors.New("not implemented") //nolint:goerr113
+-}
+-
+ // NewDirectory returns new mock directory.
+ func NewDirectory() *Directory {
+ 	return &Directory{
+diff --git a/snapshot/snapshotfs/repofs.go b/snapshot/snapshotfs/repofs.go
+index 6f53ad6e..a0baf002 100644
+--- a/snapshot/snapshotfs/repofs.go
++++ b/snapshot/snapshotfs/repofs.go
+@@ -230,10 +230,6 @@ func (rsl *repositorySymlink) Readlink(ctx context.Context) (string, error) {
+ 	return string(b), nil
+ }
+ 
+-func (rsl *repositorySymlink) Resolve(ctx context.Context) (fs.Entry, error) {
+-	return nil, errors.New("not implemented")
+-}
+-
+ func (ee *repositoryEntryError) ErrorInfo() error {
+ 	return ee.err
+ }

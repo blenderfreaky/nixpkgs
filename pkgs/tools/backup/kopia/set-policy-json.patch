@@ -1,0 +1,319 @@
+diff --git a/cli/command_policy.go b/cli/command_policy.go
+index 3e31b564..886b3b81 100644
+--- a/cli/command_policy.go
++++ b/cli/command_policy.go
+@@ -13,13 +13,11 @@
+ )
+ 
+ type commandPolicy struct {
+-	edit    commandPolicyEdit
+-	list    commandPolicyList
+-	delete  commandPolicyDelete
+-	set     commandPolicySet
+-	show    commandPolicyShow
+-	export  commandPolicyExport
+-	pImport commandPolicyImport
++	edit   commandPolicyEdit
++	list   commandPolicyList
++	delete commandPolicyDelete
++	set    commandPolicySet
++	show   commandPolicyShow
+ }
+ 
+ func (c *commandPolicy) setup(svc appServices, parent commandParent) {
+@@ -30,8 +28,6 @@ func (c *commandPolicy) setup(svc appServices, parent commandParent) {
+ 	c.delete.setup(svc, cmd)
+ 	c.set.setup(svc, cmd)
+ 	c.show.setup(svc, cmd)
+-	c.export.setup(svc, cmd)
+-	c.pImport.setup(svc, cmd)
+ }
+ 
+ type policyTargetFlags struct {
+diff --git a/cli/command_policy_export.go b/cli/command_policy_export.go
+deleted file mode 100644
+index 0a4b2474..00000000
+--- a/cli/command_policy_export.go
++++ /dev/null
+@@ -1,127 +0,0 @@
+-package cli
+-
+-import (
+-	"bufio"
+-	"context"
+-	"encoding/json"
+-	"fmt"
+-	"io"
+-	"os"
+-
+-	"github.com/kopia/kopia/repo"
+-	"github.com/kopia/kopia/snapshot/policy"
+-	"github.com/pkg/errors"
+-)
+-
+-type commandPolicyExport struct {
+-	policyTargetFlags
+-	filePath  string
+-	overwrite bool
+-
+-	jsonIndent bool
+-
+-	stdout io.Writer
+-}
+-
+-func (c *commandPolicyExport) setup(svc appServices, parent commandParent) {
+-	cmd := parent.Command("export", "Exports the policy to the specified file, or to stdout if none is specified.")
+-	cmd.Flag("to-file", "File path to export to").StringVar(&c.filePath)
+-	cmd.Flag("overwrite", "Overwrite the file if it exists").BoolVar(&c.overwrite)
+-
+-	cmd.Flag("json-indent", "Output result in indented JSON format").Hidden().BoolVar(&c.jsonIndent)
+-
+-	c.policyTargetFlags.setup(cmd)
+-
+-	c.stdout = svc.stdout()
+-
+-	cmd.Action(svc.repositoryReaderAction(c.run))
+-}
+-
+-func (c *commandPolicyExport) run(ctx context.Context, rep repo.Repository) error {
+-	var output io.Writer
+-	var err error
+-	var deferErr error
+-
+-	if c.filePath != "" {
+-		var file *os.File
+-
+-		if c.overwrite {
+-			file, err = os.Create(c.filePath)
+-		} else {
+-			file, err = os.OpenFile(c.filePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
+-			if os.IsExist(err) {
+-				return errors.Wrap(err, "file already exists and overwrite flag is not set")
+-			}
+-		}
+-
+-		if err != nil {
+-			return errors.Wrap(err, "error opening file to write to")
+-		}
+-
+-		wr := bufio.NewWriter(file)
+-		defer func() {
+-			if deferErr = wr.Flush(); deferErr != nil {
+-				deferErr = errors.Wrap(deferErr, "failed to flush file")
+-				return
+-			}
+-			if deferErr = file.Sync(); deferErr != nil {
+-				deferErr = errors.Wrap(deferErr, "failed to sync file")
+-				return
+-			}
+-			if deferErr = file.Close(); deferErr != nil {
+-				deferErr = errors.Wrap(deferErr, "failed to close file")
+-				return
+-			}
+-		}()
+-
+-		output = wr
+-	} else {
+-		if c.overwrite {
+-			return errors.New("overwrite was passed but no file path was given")
+-		}
+-		output = c.stdout
+-	}
+-
+-	policies := make(map[string]*policy.Policy)
+-
+-	if c.policyTargetFlags.global || len(c.policyTargetFlags.targets) > 0 {
+-		targets, err := c.policyTargets(ctx, rep)
+-		if err != nil {
+-			return err
+-		}
+-
+-		for _, target := range targets {
+-			policy, err := policy.GetDefinedPolicy(ctx, rep, target)
+-			if err != nil {
+-				return errors.Wrapf(err, "can't get defined policy for %q", target)
+-			}
+-
+-			policies[target.String()] = policy
+-		}
+-	} else {
+-		ps, err := policy.ListPolicies(ctx, rep)
+-		if err != nil {
+-			return errors.Wrap(err, "failed to list policies")
+-		}
+-
+-		for _, policy := range ps {
+-			policies[policy.Target().String()] = policy
+-		}
+-	}
+-
+-	var toWrite []byte
+-
+-	if c.jsonIndent {
+-		toWrite, err = json.MarshalIndent(policies, "", "  ")
+-	} else {
+-		toWrite, err = json.Marshal(policies)
+-	}
+-
+-	if err != nil {
+-		panic("error serializing JSON, that should not happen: " + err.Error())
+-	}
+-
+-	fmt.Fprintf(output, "%s", toWrite) //nolint:errcheck
+-
+-	return nil
+-}
+diff --git a/cli/command_policy_import.go b/cli/command_policy_import.go
+deleted file mode 100644
+index c9465187..00000000
+--- a/cli/command_policy_import.go
++++ /dev/null
+@@ -1,91 +0,0 @@
+-package cli
+-
+-import (
+-	"bufio"
+-	"context"
+-	"encoding/json"
+-	"io"
+-	"os"
+-
+-	"github.com/kopia/kopia/repo"
+-	"github.com/kopia/kopia/snapshot"
+-	"github.com/kopia/kopia/snapshot/policy"
+-	"github.com/pkg/errors"
+-)
+-
+-type commandPolicyImport struct {
+-	policyTargetFlags
+-	filePath string
+-
+-	stdin io.Reader
+-}
+-
+-func (c *commandPolicyImport) setup(svc appServices, parent commandParent) {
+-	cmd := parent.Command("import", "Imports policies from a specified file, or stdin if no file is specified.")
+-	cmd.Flag("from-file", "File path to import from").StringVar(&c.filePath)
+-
+-	c.policyTargetFlags.setup(cmd)
+-	c.stdin = svc.stdin()
+-
+-	cmd.Action(svc.repositoryWriterAction(c.run))
+-}
+-
+-func (c *commandPolicyImport) run(ctx context.Context, rep repo.RepositoryWriter) error {
+-	var input io.Reader
+-	var err error
+-
+-	if c.filePath != "" {
+-		file, err := os.Open(c.filePath)
+-
+-		if err != nil {
+-			return errors.Wrap(err, "unable to read policy file")
+-		}
+-
+-		input = bufio.NewReader(file)
+-	} else {
+-		input = c.stdin
+-	}
+-
+-	policies := make(map[string]*policy.Policy)
+-	d := json.NewDecoder(input)
+-	d.DisallowUnknownFields()
+-
+-	err = d.Decode(&policies)
+-
+-	if err != nil {
+-		return errors.Wrap(err, "unable to decode policy file as valid json")
+-	}
+-
+-	//var targetLimit []snapshot.SourceInfo
+-	targetLimit := make(map[snapshot.SourceInfo]struct{})
+-
+-	if c.policyTargetFlags.global || len(c.policyTargetFlags.targets) > 0 {
+-		targetLimitSrc, err := c.policyTargets(ctx, rep)
+-		if err != nil {
+-			return err
+-		}
+-
+-		for _, target := range targetLimitSrc {
+-			targetLimit[target] = struct{}{}
+-		}
+-	}
+-
+-	for ts, newPolicy := range policies {
+-		target, err := snapshot.ParseSourceInfo(ts, rep.ClientOptions().Hostname, rep.ClientOptions().Username)
+-		if err != nil {
+-			return errors.Wrapf(err, "unable to parse source info: %q", ts)
+-		}
+-
+-		if len(targetLimit) > 0 {
+-			if _, ok := targetLimit[target]; !ok {
+-				continue
+-			}
+-		}
+-
+-		if err := policy.SetPolicy(ctx, rep, target, newPolicy); err != nil {
+-			return errors.Wrapf(err, "can't save policy for %v", target)
+-		}
+-	}
+-
+-	return nil
+-}
+diff --git a/site/content/docs/Getting started/_index.md b/site/content/docs/Getting started/_index.md
+index 8eadb3ab..0065a83c 100755
+--- a/site/content/docs/Getting started/_index.md	
++++ b/site/content/docs/Getting started/_index.md	
+@@ -325,7 +325,7 @@ Files policy:
+     .kopiaignore                   inherited from (global)
+ ```
+ 
+-To list all policies for a `repository`, we can use [`kopia policy list`](../reference/command-line/common/policy-list/):
++Finally, to list all policies for a `repository`, we can use [`kopia policy list`](../reference/command-line/common/policy-list/):
+ 
+ ```
+ $ kopia policy list
+@@ -334,43 +334,6 @@ $ kopia policy list
+ 2339ab4739bb29688bf26a3a841cf68f jarek@jareks-mbp:/Users/jarek/Projects/Kopia/site/node_modules
+ ```
+ 
+-Finally, you can also import and export policies using the [`kopia policy import`](../reference/command-line/common/policy-import/) and [`kopia policy export`](../reference/command-line/common/policy-export/) commands:
+-
+-```
+-$ kopia policy import --from-file import.json
+-$ kopia policy export --to-file export.json
+-```
+-
+-In the above example, `import.json` and `export.json` share the same format, which is a JSON map of policy identifiers to defined policies, for example:
+-
+-```
+-{
+-  "(global)": {
+-    "retention": {
+-      "keepLatest": 10,
+-      "keepHourly": 48,
+-      ...
+-    },
+-    ...
+-  },
+-  "foo@bar:/home/foobar": {
+-     "retention": {
+-      "keepLatest": 5,
+-      "keepHourly": 24,
+-      ...
+-    },
+-    ...
+-  }
+-}
+-```
+-
+-You can optionally limit which policies are imported or exported by specifying the policy identifiers as arguments to the `kopia policy import` and `kopia policy export` commands:
+-
+-```
+-$ kopia policy import --from-file import.json "(global)" "foo@bar:/home/foobar"
+-$ kopia policy export --to-file export.json "(global)" "foo@bar:/home/foobar"
+-```
+-
+ #### Examining Repository Structure
+ 
+ Kopia CLI provides low-level commands to examine the contents of repository, perform maintenance actions, and get deeper insight into how the data is laid out.
