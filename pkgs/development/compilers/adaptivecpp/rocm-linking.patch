@@ -1,5 +1,5 @@
 diff --git a/src/compiler/llvm-to-backend/amdgpu/LLVMToAmdgpu.cpp b/src/compiler/llvm-to-backend/amdgpu/LLVMToAmdgpu.cpp
-index 6be898ae..a86b1029 100644
+index 6be898ae..3d10bc35 100644
 --- a/src/compiler/llvm-to-backend/amdgpu/LLVMToAmdgpu.cpp
 +++ b/src/compiler/llvm-to-backend/amdgpu/LLVMToAmdgpu.cpp
 @@ -153,7 +153,7 @@ public:
@@ -20,3 +20,28 @@ index 6be898ae..a86b1029 100644
      
      std::string Output;
      if(!getCommandOutput(ClangPath, Invocation, Output))
+@@ -209,6 +209,7 @@ public:
+ 
+ LLVMToAmdgpuTranslator::LLVMToAmdgpuTranslator(const std::vector<std::string> &KN)
+     : LLVMToBackendTranslator{sycl::jit::backend::amdgpu, KN, KN}, KernelNames{KN} {
++      HIPSYCL_DEBUG_WARNING << "ASDF Concatting\n";
+   RocmDeviceLibsPath = common::filesystem::join_path(RocmPath,
+                                                      std::vector<std::string>{"amdgcn", "bitcode"});
+ }
+@@ -299,6 +300,7 @@ bool LLVMToAmdgpuTranslator::translateToBackendFormat(llvm::Module &FlavoredModu
+ }
+ 
+ bool LLVMToAmdgpuTranslator::applyBuildOption(const std::string &Option, const std::string &Value) {
++HIPSYCL_DEBUG_WARNING << "ASDF Arg " << Option << " = " << Value << "\n";
+   if(Option == "amdgpu-target-device") {
+     TargetDevice = Value;
+     return true;
+@@ -309,6 +311,7 @@ bool LLVMToAmdgpuTranslator::applyBuildOption(const std::string &Option, const s
+     RocmPath = Value;
+     return true;
+   }
++HIPSYCL_DEBUG_WARNING << "ASDF Ignored " << Option << "\n";
+ 
+   return false;
+ }
+
