@@ -40,6 +40,8 @@ stdenv.mkDerivation (finalAttrs: {
 
   #patches = [./rocm-linking.patch];
 
+  # we may be able to get away with just wrapping hipcc and nothing more
+  # this is mainly so that if acpp tries doing <PATH_TO_HIPCC>/../amdgcn/bitcode
   rocmMerged = symlinkJoin {
     name = "rocm-merged";
     paths = with rocmPackages; [
@@ -47,6 +49,11 @@ stdenv.mkDerivation (finalAttrs: {
       rocm-device-libs
       rocm-runtime
     ];
+    buildInputs = [ makeWrapper ];
+    postBuild = ''
+      wrapProgram $out/bin/hipcc \
+        --add-flags "--rocm-device-lib-path=$out/amdgcn/bitcode"
+    '';
   };
 
   nativeBuildInputs =
@@ -86,6 +93,10 @@ stdenv.mkDerivation (finalAttrs: {
       (lib.cmakeBool "WITH_CUDA_BACKEND" cudaSupport)
       (lib.cmakeBool "WITH_ROCM_BACKEND" rocmSupport)
     ]
+    ++ lib.optionals rocmSupport [
+      "-DHIPCC_COMPILER=${finalAttrs.rocmMerged}/bin/hipcc"
+      "-DROCM_PATH=${finalAttrs.rocmMerged}"
+    ]
     ++ lib.optionals (lib.versionAtLeast finalAttrs.version "24") [
       (lib.cmakeBool "WITH_OPENCL_BACKEND" openclSupport)
     ];
@@ -115,7 +126,7 @@ stdenv.mkDerivation (finalAttrs: {
   postFixup = lib.optionalString rocmSupport
     ''
     substituteInPlace $out/etc/AdaptiveCpp/*.json \
-      --replace-fail "${rocmPackages.clr}" "${finalAttrs.rocmMerged}" \
+      --replace "${rocmPackages.clr}" "${finalAttrs.rocmMerged}" \
       --replace "\$HIPSYCL_ROCM_PATH" "${finalAttrs.rocmMerged}" \
       --replace "\$HIPSYCL_PATH" "$out"
     '';
