@@ -1,6 +1,7 @@
 {
   lib,
   fetchFromGitHub,
+  symlinkJoin,
   llvmPackages_17,
   lld_17,
   python3,
@@ -37,7 +38,16 @@ stdenv.mkDerivation (finalAttrs: {
     sha256 = "sha256-TPa2DT66bGQ9VfSXaFUDuE5ng5x5fiLC2bqQ+ZVo9LQ=";
   };
 
-  patches = [./rocm-linking.patch];
+  #patches = [./rocm-linking.patch];
+
+  rocmMerged = symlinkJoin {
+    name = "rocm-merged";
+    paths = with rocmPackages; [
+      clr
+      rocm-device-libs
+      rocm-runtime
+    ];
+  };
 
   nativeBuildInputs =
     [
@@ -61,8 +71,7 @@ stdenv.mkDerivation (finalAttrs: {
       llvmPackages.llvm
     ]
     ++ lib.optionals rocmSupport [
-      rocmPackages.clr
-      rocmPackages.rocm-runtime
+      finalAttrs.rocmMerged
     ]
     ++ lib.optionals cudaSupport [
       cudaPackages.cuda_cudart
@@ -84,24 +93,24 @@ stdenv.mkDerivation (finalAttrs: {
   # this hardening option breaks rocm builds
   hardeningDisable = [ "zerocallusedregs" ];
 
-  postFixup = lib.optionalString rocmSupport
-    ''
-      #for b in acpp syclcc syclcc-clang
-      #do
-      #  wrapProgram $out/bin/$b \
-      #    --add-flags "--rocm-device-lib-path=${rocmPackages.rocm-device-libs}/amdgcn/bitcode"
-      #done
-      #wrapProgram $out/bin/acpp \
-      #    --add-flags "--rocm-device-lib-path=${rocmPackages.rocm-device-libs}/amdgcn/bitcode"
-
-      cat <<EOF > $out/etc/AdaptiveCpp/acpp-rocm.json
-      {
-        "default-rocm-path" : "${rocmPackages.clr}",
-        "default-rocm-link-line" : "-Wl,-rpath=${rocmPackages.clr}/lib -Wl,-rpath=${rocmPackages.clr}/hip/lib -L${rocmPackages.clr} -L${rocmPackages.clr} -lamdhip64",
-        "default-rocm-cxx-flags" : "-isystem \$HIPSYCL_PATH/include/AdaptiveCpp/hipSYCL/std/hiplike -isystem ${llvmPackages.libclang.dev}/include -U__FLOAT128__ -U__SIZEOF_FLOAT128__ -I${rocmPackages.clr}/include --rocm-device-libs-path=${rocmPackages.rocm-device-libs}/amdgcn/bitcode --rocm-path=${rocmPackages.clr} -fhip-new-launch-api -mllvm -amdgpu-early-inline-all=true -mllvm -amdgpu-function-calls=false -D__HIP_ROCclr__"
-      }
-      EOF
-    '';
+  #postFixup = lib.optionalString rocmSupport
+  #  ''
+  #    #for b in acpp syclcc syclcc-clang
+  #    #do
+  #    #  wrapProgram $out/bin/$b \
+  #    #    --add-flags "--rocm-device-lib-path=${rocmPackages.rocm-device-libs}/amdgcn/bitcode"
+  #    #done
+  #    #wrapProgram $out/bin/acpp \
+  #    #    --add-flags "--rocm-device-lib-path=${rocmPackages.rocm-device-libs}/amdgcn/bitcode"
+  #
+  #      cat <<EOF > $out/etc/AdaptiveCpp/acpp-rocm.json
+  #      {
+  #        "default-rocm-path" : "${rocmPackages.clr}",
+  #        "default-rocm-link-line" : "-Wl,-rpath=${rocmPackages.clr}/lib -Wl,-rpath=${rocmPackages.clr}/hip/lib -L${rocmPackages.clr} -L${rocmPackages.clr} -lamdhip64",
+  #        "default-rocm-cxx-flags" : "-isystem $out/include/AdaptiveCpp/hipSYCL/std/hiplike -isystem ${llvmPackages.libclang.dev}/include -U__FLOAT128__ -U__SIZEOF_FLOAT128__ -I${rocmPackages.clr}/include --rocm-device-libs-path=${rocmPackages.rocm-device-libs}/amdgcn/bitcode --rocm-path=${rocmPackages.clr} -fhip-new-launch-api -mllvm -amdgpu-early-inline-all=true -mllvm -amdgpu-function-calls=false -D__HIP_ROCclr__"
+  #      }
+  #      EOF
+  #    '';
 
   passthru = {
     # For tests

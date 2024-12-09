@@ -13,12 +13,12 @@ stdenv.mkDerivation (finalAttrs: {
   inherit (adaptivecpp)
     version
     src
-    #nativeBuildInputs
+    nativeBuildInputs
     buildInputs
     ;
-nativeBuildInputs = adaptivecpp.nativeBuildInputs ++ [
-boost llvmPackages_17.openmp llvmPackages_17.bintools
-];
+  #nativeBuildInputs = adaptivecpp.nativeBuildInputs ++ [
+  #boost llvmPackages_17.openmp llvmPackages_17.bintools
+  #];
 
   sourceRoot = "${adaptivecpp.src.name}/tests";
 
