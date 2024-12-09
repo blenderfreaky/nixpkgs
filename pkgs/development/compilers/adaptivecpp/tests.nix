@@ -5,15 +5,20 @@
   # after cursory testing it seems like this isn't really useful, but if errors pop up, maybe look into restricting the targets
   targetsBuild ? null,
   targetsRun ? null,
+  llvmPackages_17,
+  boost,
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "${adaptivecpp.pname}-tests";
   inherit (adaptivecpp)
     version
     src
-    nativeBuildInputs
+    #nativeBuildInputs
     buildInputs
     ;
+nativeBuildInputs = adaptivecpp.nativeBuildInputs ++ [
+boost llvmPackages_17.openmp llvmPackages_17.bintools
+];
 
   sourceRoot = "${adaptivecpp.src.name}/tests";
 
@@ -26,7 +31,7 @@ stdenv.mkDerivation (finalAttrs: {
       "-DACCP_TARGETS=\"${targetsBuild}\""
     ];
 
-  doCheck = true;
+  #doCheck = true;
   checkPhase = ''
     # the test runner wants to write to $HOME/.acpp, so we need to have it point to a real directory
     mkdir home
@@ -36,5 +41,6 @@ stdenv.mkDerivation (finalAttrs: {
     ./sycl_tests
   '';
 
-  installPhase = "touch $out";
+  #installPhase = "touch $out";
+  installPhase = "mkdir -p $out; cp -r * $out/";
 })

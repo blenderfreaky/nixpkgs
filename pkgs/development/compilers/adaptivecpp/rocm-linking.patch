@@ -1,0 +1,22 @@
+diff --git a/src/compiler/llvm-to-backend/amdgpu/LLVMToAmdgpu.cpp b/src/compiler/llvm-to-backend/amdgpu/LLVMToAmdgpu.cpp
+index 6be898ae..a86b1029 100644
+--- a/src/compiler/llvm-to-backend/amdgpu/LLVMToAmdgpu.cpp
++++ b/src/compiler/llvm-to-backend/amdgpu/LLVMToAmdgpu.cpp
+@@ -153,7 +153,7 @@ public:
+       Invocation.push_back("-fno-hip-fp32-correctly-rounded-divide-sqrt");
+     }
+     
+-    if(!llvm::StringRef{ClangPath}.endswith("hipcc")) {
++    //if(!llvm::StringRef{ClangPath}.endswith("hipcc")) {
+       // Normally we try to use hipcc. However, when that fails,
+       // we may have fallen back to clang. In that case we may
+       // have to additionally set --rocm-path and --rocm-device-lib-path.
+@@ -173,7 +173,7 @@ public:
+             << " does not seem to contain key ROCm bitcode libraries such as ockl.bc. It is "
+                "possible that builtin bitcode linking is incomplete.\n";
+       }
+-    }
++    //}
+     
+     std::string Output;
+     if(!getCommandOutput(ClangPath, Invocation, Output))
