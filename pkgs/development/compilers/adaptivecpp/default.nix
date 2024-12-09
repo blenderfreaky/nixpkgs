@@ -112,6 +112,14 @@ stdenv.mkDerivation (finalAttrs: {
   #      EOF
   #    '';
 
+  postFixup = lib.optionalString rocmSupport
+    ''
+    substituteInPlace $out/etc/AdaptiveCpp/*.json \
+      --replace-fail "${rocmPackages.clr}" "${finalAttrs.rocmMerged}" \
+      --replace "\$HIPSYCL_ROCM_PATH" "${finalAttrs.rocmMerged}" \
+      --replace "\$HIPSYCL_PATH" "$out"
+    '';
+
   passthru = {
     # For tests
     inherit (finalAttrs) nativeBuildInputs buildInputs;
