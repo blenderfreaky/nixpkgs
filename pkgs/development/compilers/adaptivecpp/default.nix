@@ -72,8 +72,6 @@ stdenv.mkDerivation (finalAttrs: {
       (lib.cmakeBool "WITH_CPU_BACKEND" ompSupport)
       (lib.cmakeBool "WITH_CUDA_BACKEND" cudaSupport)
       (lib.cmakeBool "WITH_ROCM_BACKEND" rocmSupport)
-    ]
-    ++ lib.optionals (lib.versionAtLeast finalAttrs.version "24") [
       (lib.cmakeBool "WITH_OPENCL_BACKEND" openclSupport)
     ];
 
