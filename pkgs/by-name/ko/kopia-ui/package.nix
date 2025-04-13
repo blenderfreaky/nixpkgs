@@ -8,6 +8,7 @@
   nix-update-script,
   makeWrapper,
   kopia,
+  rclone,
 }:
 let
   version = "0.19.0";
@@ -30,6 +31,11 @@ buildNpmPackage {
   nativeBuildInputs = [
     copyDesktopItems
     makeWrapper
+  ];
+
+  buildInputs = [
+    # For connecting to rclone remotes
+    rclone
   ];
 
   env = {
