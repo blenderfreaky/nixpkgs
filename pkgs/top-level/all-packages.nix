@@ -3131,6 +3131,8 @@ with pkgs;
 
   google-compute-engine = with python3.pkgs; toPythonApplication google-compute-engine;
 
+  gdbm_1_13 = callPackage ../by-name/gd/gdbm/1.13.nix { };
+
   gdown = with python3Packages; toPythonApplication gdown;
 
   gpt4all-cuda = gpt4all.override {
