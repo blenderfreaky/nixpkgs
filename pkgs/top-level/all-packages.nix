@@ -3911,6 +3911,8 @@ with pkgs;
 
   open-interpreter = with python3Packages; toPythonApplication open-interpreter;
 
+  opencl-clang_14 = callPackage ../by-name/op/opencl-clang/14.nix { };
+
   openhantek6022 = libsForQt5.callPackage ../applications/science/electronics/openhantek6022 { };
 
   openmvg = callPackage ../applications/science/misc/openmvg {
