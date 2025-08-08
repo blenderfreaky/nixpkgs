@@ -49,7 +49,7 @@ stdenv.mkDerivation rec {
     owner = "intel";
     repo = "intel-graphics-compiler";
     tag = "v${version}";
-    hash = "sha256-PBUKLvP9h7AhYbaxjAC749sQqYJLAjNpWfME8t84D0k=";
+    hash = "sha256-KZ9+KAQgZQChucspgw7rk22M1FLv5qJvlXPJZ67wdgI=";
   };
 
   postPatch = ''
