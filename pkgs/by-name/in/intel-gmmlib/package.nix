@@ -3,6 +3,7 @@
   stdenv,
   fetchFromGitHub,
   cmake,
+  nix-update-script,
   # for passthru.tests
   intel-compute-runtime,
   intel-media-driver,
@@ -21,8 +22,12 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [ cmake ];
 
-  passthru.tests = {
-    inherit intel-compute-runtime intel-media-driver;
+  passthru = {
+    tests = {
+      inherit intel-compute-runtime intel-media-driver;
+    };
+
+    updateScript = nix-update-script { };
   };
 
   meta = with lib; {
