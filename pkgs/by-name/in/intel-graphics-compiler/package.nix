@@ -14,6 +14,7 @@
   spirv-tools,
   spirv-headers,
   spirv-llvm-translator,
+  nix-update-script,
 
   buildWithPatches ? true,
 }:
@@ -95,8 +96,12 @@ stdenv.mkDerivation rec {
     "-Wno-dev"
   ];
 
-  passthru.tests = {
-    inherit intel-compute-runtime;
+  passthru = {
+    tests = {
+      inherit intel-compute-runtime;
+    };
+
+    updateScript = nix-update-script { };
   };
 
   meta = with lib; {
