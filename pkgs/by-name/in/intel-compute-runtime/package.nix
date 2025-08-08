@@ -8,6 +8,7 @@
   intel-graphics-compiler,
   level-zero,
   libva,
+  nix-update-script,
 }:
 
 stdenv.mkDerivation rec {
@@ -72,7 +73,9 @@ stdenv.mkDerivation rec {
       $out/lib/intel-opencl/libigdrcl.so
   '';
 
-  meta = {
+  passthru.updateScript = nix-update-script { };
+
+  meta = with lib; {
     description = "Intel Graphics Compute Runtime oneAPI Level Zero and OpenCL, supporting 12th Gen and newer";
     mainProgram = "ocloc";
     homepage = "https://github.com/intel/compute-runtime";
