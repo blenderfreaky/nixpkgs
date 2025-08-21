@@ -532,7 +532,6 @@ python.pkgs.buildPythonApplication rec {
     # flaky
     "tests/test_bootstrap.py::test_setup_hass_takes_longer_than_log_slow_startup"
     "tests/test_test_fixtures.py::test_evict_faked_translations"
-    "tests/helpers/test_backup.py::test_async_get_manager"
     # (2025.7.0) Fails to find name of tracked time interval in scheduled jobs
     "tests/helpers/test_event.py::test_track_time_interval_name"
     # (2025.7.2) Exception string mismatch (non-blocking vs non blocking)
