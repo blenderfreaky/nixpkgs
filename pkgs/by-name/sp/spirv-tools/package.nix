@@ -6,16 +6,15 @@
   python3,
   spirv-headers,
 }:
-
 stdenv.mkDerivation rec {
   pname = "spirv-tools";
-  version = "1.4.321.0";
+  version = "1.4.322.0";
 
   src = fetchFromGitHub {
     owner = "KhronosGroup";
     repo = "SPIRV-Tools";
-    rev = "vulkan-sdk-${version}";
-    hash = "sha256-yAdd/mXY8EJnE0vCu0n/aVxMH9059T/7cAdB9nP1vQQ=";
+    rev = "8a8bb6c89174ed753eb18a438092ee59356efc3c";
+    hash = "sha256-mgkSLMqRYSy1V4T0shL3wo8uigOORMMxgi7ZoH8AWGk=";
   };
 
   # The cmake options are sufficient for turning on static building, but not
@@ -55,6 +54,6 @@ stdenv.mkDerivation rec {
     homepage = "https://github.com/KhronosGroup/SPIRV-Tools";
     license = licenses.asl20;
     platforms = with platforms; unix ++ windows;
-    maintainers = [ maintainers.ralith ];
+    maintainers = [maintainers.ralith];
   };
 }
