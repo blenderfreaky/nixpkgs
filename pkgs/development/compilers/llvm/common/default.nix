@@ -496,7 +496,7 @@ makeScopeWithSplicing' {
     }
     //
       lib.optionalAttrs
-        (lib.versionAtLeast metadata.release_version "16" && lib.versionOlder metadata.release_version "20")
+        (lib.versionAtLeast metadata.release_version "16" && lib.versionOlder metadata.release_version "22")
         {
           libclc = callPackage ./libclc { };
         }
