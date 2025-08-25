@@ -239,4 +239,15 @@
       path = ../19;
     }
   ];
+  "libclc/gnu-install-dirs.patch" = [
+    {
+      after = "16";
+      before = "21";
+      path = ../19;
+    }
+    {
+      after = "21";
+      path = ../21;
+    }
+  ];
 }
